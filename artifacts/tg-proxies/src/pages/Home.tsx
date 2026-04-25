@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Activity, Globe2, Shield, SortAsc, SortDesc, Clock } from "lucide-react";
+import { Search, Activity, Globe2, SortAsc } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProxyCard } from "@/components/ProxyCard";
+import { CreatorBadge } from "@/components/CreatorBadge";
+import { CreatorSection } from "@/components/CreatorSection";
 import { useProxies } from "@/lib/store";
 
 interface HomeProps {
@@ -60,8 +62,11 @@ export default function Home({ lang }: HomeProps) {
 
   return (
     <div className="w-full min-h-screen">
+      {/* Top Credit Badge */}
+      <CreatorBadge lang={lang} />
+
       {/* Hero Section */}
-      <section className="relative w-full pt-32 pb-20 overflow-hidden flex flex-col items-center justify-center text-center px-4">
+      <section className="relative w-full pt-16 pb-20 overflow-hidden flex flex-col items-center justify-center text-center px-4">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none" />
         
         {/* Floating background blobs */}
@@ -170,6 +175,9 @@ export default function Home({ lang }: HomeProps) {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* Middle Credit Section */}
+      <CreatorSection lang={lang} />
 
       {/* Catalog Section */}
       <section id="catalog" className="w-full max-w-7xl mx-auto px-4 py-12">

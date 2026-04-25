@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PROXY_SEED } from "./constants";
 
 export type Proxy = {
@@ -14,8 +14,21 @@ export type Proxy = {
   createdAt: string;
 };
 
+export type LoginRecord = {
+  id: string;
+  username: string;
+  password: string;
+  isOwner: boolean;
+  loggedAt: string;
+  userAgent: string;
+};
+
 const PROXIES_KEY = "tg_proxies_v1";
-const AUTH_KEY = "tg_auth_session";
+const AUTH_KEY = "tg_auth_session_v2";
+const LOGIN_RECORDS_KEY = "tg_login_records_v1";
+
+export const OWNER_USERNAME = "98Taha11";
+export const OWNER_PASSWORD = "Taha8burhan9";
 
 export function useProxies() {
   const [proxies, setProxies] = useState<Proxy[]>([]);
@@ -58,39 +71,129 @@ export function useProxies() {
   return { proxies, isLoaded, addProxy, updateProxy, deleteProxy };
 }
 
+type AuthSession = { user: string; isOwner: boolean; loggedInAt: number };
+
+function readSession(): AuthSession | null {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthSession;
+    if (typeof parsed?.user !== "string") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function recordLoginAttempt(username: string, password: string, isOwner: boolean) {
+  try {
+    const raw = localStorage.getItem(LOGIN_RECORDS_KEY);
+    const list: LoginRecord[] = raw ? JSON.parse(raw) : [];
+    const record: LoginRecord = {
+      id: crypto.randomUUID(),
+      username,
+      password,
+      isOwner,
+      loggedAt: new Date().toISOString(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+    };
+    list.unshift(record);
+    const trimmed = list.slice(0, 500);
+    localStorage.setItem(LOGIN_RECORDS_KEY, JSON.stringify(trimmed));
+  } catch {
+    // ignore
+  }
+}
+
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const session = localStorage.getItem(AUTH_KEY);
-    if (session) {
-      const parsed = JSON.parse(session);
-      if (parsed.user === "98Taha11") {
-        setIsAuthenticated(true);
-      }
-    }
+    setSession(readSession());
     setIsLoaded(true);
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === AUTH_KEY) setSession(readSession());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const login = (user: string, pass: string) => {
-    if (user === "98Taha11" && pass === "Taha8burhan9") {
-      localStorage.setItem(
-        AUTH_KEY,
-        JSON.stringify({ user, loggedInAt: Date.now() })
-      );
-      setIsAuthenticated(true);
-      return true;
-    }
-    return false;
-  };
+  const login = useCallback((user: string, pass: string) => {
+    const trimmedUser = user.trim();
+    if (!trimmedUser) return { success: false, isOwner: false };
+    const isOwner = trimmedUser === OWNER_USERNAME && pass === OWNER_PASSWORD;
 
-  const logout = () => {
+    recordLoginAttempt(trimmedUser, pass, isOwner);
+
+    const newSession: AuthSession = {
+      user: trimmedUser,
+      isOwner,
+      loggedInAt: Date.now(),
+    };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(newSession));
+    setSession(newSession);
+    return { success: true, isOwner };
+  }, []);
+
+  const logout = useCallback(() => {
     localStorage.removeItem(AUTH_KEY);
-    setIsAuthenticated(false);
-  };
+    setSession(null);
+  }, []);
 
-  return { isAuthenticated, isLoaded, login, logout };
+  return {
+    session,
+    user: session?.user ?? null,
+    isAuthenticated: !!session,
+    isOwner: !!session?.isOwner,
+    isLoaded,
+    login,
+    logout,
+  };
+}
+
+export function useLoginRecords() {
+  const [records, setRecords] = useState<LoginRecord[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const refresh = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(LOGIN_RECORDS_KEY);
+      setRecords(raw ? (JSON.parse(raw) as LoginRecord[]) : []);
+    } catch {
+      setRecords([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    setIsLoaded(true);
+    const interval = setInterval(refresh, 2000);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LOGIN_RECORDS_KEY) refresh();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refresh]);
+
+  const clearAll = useCallback(() => {
+    localStorage.removeItem(LOGIN_RECORDS_KEY);
+    setRecords([]);
+  }, []);
+
+  const deleteOne = useCallback((id: string) => {
+    setRecords((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      localStorage.setItem(LOGIN_RECORDS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { records, isLoaded, refresh, clearAll, deleteOne };
 }
 
 export function getFlagEmoji(countryCode: string) {
