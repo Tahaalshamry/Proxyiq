@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Telegram Proxies"
+version = "1.0.0"
+id = "artifacts/tg-proxies"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22678
+
+[services.development]
+run = "pnpm --filter @workspace/tg-proxies run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tg-proxies", "run", "build" ]
+publicDir = "artifacts/tg-proxies/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22678"
+BASE_PATH = "/"
