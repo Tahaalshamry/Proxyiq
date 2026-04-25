@@ -43,7 +43,7 @@ export function Header({ lang, setLang }: HeaderProps) {
             {isAr ? "EN" : "AR"}
           </Button>
 
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <>
               {location !== "/admin" && (
                 <Link href="/admin">
@@ -57,12 +57,6 @@ export function Header({ lang, setLang }: HeaderProps) {
                 {isAr ? "خروج" : "Logout"}
               </Button>
             </>
-          ) : (
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                {isAr ? "تسجيل دخول" : "Admin Login"}
-              </Button>
-            </Link>
           )}
         </div>
       </div>

@@ -80,32 +80,94 @@ export default function Home({ lang }: HomeProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative z-10 max-w-4xl mx-auto space-y-8"
+          className="relative z-10 max-w-5xl mx-auto space-y-8"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-md text-primary font-mono text-sm mb-4 shadow-[0_0_20px_-5px_rgba(var(--primary),0.3)]">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-md text-primary font-mono text-sm mb-2 shadow-[0_0_30px_-5px_rgba(var(--primary),0.4)]"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
             <span>{onlineCount} {isAr ? "بروكسي يعمل الآن" : "Active Proxies"}</span>
+            <span className="opacity-30">|</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-base leading-none">🇮🇶</span>
+              <span>{isAr ? "العراق" : "Iraq"}</span>
+            </span>
+          </motion.div>
+
+          <div className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <span className="text-sm md:text-base font-mono uppercase tracking-[0.4em] text-primary/70">
+                {isAr ? "بروكسيات حصرية" : "Exclusive Proxies"}
+              </span>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05]"
+            >
+              <span className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-white/95 to-white/60">
+                {isAr ? "رفع الحجب عن" : "Unblock"}
+              </span>
+              <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-fuchsia-400 to-primary drop-shadow-[0_0_30px_rgba(168,85,247,0.5)]">
+                {isAr ? "تيليجرام" : "Telegram"}
+              </span>
+            </motion.h1>
+
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={{ opacity: 1, scaleX: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex items-center justify-center gap-4 pt-4"
+            >
+              <div className="h-px w-12 md:w-20 bg-gradient-to-r from-transparent to-primary/50" />
+              <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
+                <span className="text-xl leading-none">🇮🇶</span>
+                <span className="font-bold text-base md:text-lg text-foreground">
+                  {isAr ? "في العراق" : "In Iraq"}
+                </span>
+              </div>
+              <div className="h-px w-12 md:w-20 bg-gradient-to-l from-transparent to-primary/50" />
+            </motion.div>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-white/90 to-primary/50">
-            {isAr ? "شبكة اتصالك الخفية" : "Your Invisible Network"}
-          </h1>
-          
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {isAr 
-              ? "مجموعة مميزة من بروكسيات MTProto عالية الأداء لتيليجرام. سرعة، استقرار، وأمان."
-              : "A premium collection of high-performance MTProto proxies for Telegram. Fast, stable, and secure."}
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.6 }}
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+          >
+            {isAr
+              ? "تجاوز الحجب وتمتع بتيليجرام بسرعة عالية وأمان كامل. بروكسيات MTProto مختارة بعناية تعمل بكفاءة داخل العراق."
+              : "Bypass restrictions and enjoy Telegram at full speed with complete security. Carefully curated MTProto proxies that work flawlessly inside Iraq."}
+          </motion.p>
 
-          <div className="pt-8">
-            <Button 
-              size="lg" 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.8 }}
+            className="pt-6"
+          >
+            <Button
+              size="lg"
               onClick={scrollToCatalog}
               className="h-14 px-8 text-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-[0_0_30px_-5px_rgba(var(--primary),0.6)] hover:shadow-[0_0_40px_-5px_rgba(var(--primary),0.8)] transition-all duration-300"
             >
               {isAr ? "تصفح البروكسيات" : "Browse Proxies"}
             </Button>
-          </div>
+          </motion.div>
         </motion.div>
       </section>
 
