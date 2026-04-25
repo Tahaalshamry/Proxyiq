@@ -33,19 +33,29 @@ export default function Login({ lang }: LoginProps) {
       return;
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
+
+    // وقت انتظار قصير للتجربة السلسة
+    await new Promise((r) => setTimeout(r, 600));
 
     const result = login(username, password);
-    setIsLoading(false);
 
     if (result.success) {
       if (result.isOwner) {
         toast.success(isAr ? "أهلاً بك أيها المالك" : "Welcome back, owner");
-        setLocation("/admin");
+        // حل مشكلة الريفريش: الانتقال المباشر مع تحديث الحالة
+        setTimeout(() => {
+          window.location.href = "/admin";
+        }, 100);
       } else {
         toast.success(isAr ? "تم الدخول بنجاح" : "Logged in successfully");
-        setLocation("/");
+        // حل مشكلة الريفريش: الانتقال المباشر مع تحديث الحالة
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       }
+    } else {
+      setIsLoading(false);
+      toast.error(isAr ? "خطأ في البيانات" : "Invalid credentials");
     }
   };
 
@@ -101,7 +111,6 @@ export default function Login({ lang }: LoginProps) {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-5 gap-0 rounded-3xl border border-white/10 bg-card/60 backdrop-blur-2xl shadow-[0_0_80px_-20px_rgba(168,85,247,0.5)] overflow-hidden"
         >
-          {/* Left: creator photo */}
           <div className="lg:col-span-2 relative min-h-[260px] lg:min-h-[560px] overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-transparent to-fuchsia-500/40" />
             <img
@@ -111,7 +120,6 @@ export default function Login({ lang }: LoginProps) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-background/40" />
 
-            {/* Owner name overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/70 border border-primary/40 backdrop-blur-md">
                 <span className="relative flex h-2 w-2">
@@ -137,7 +145,6 @@ export default function Login({ lang }: LoginProps) {
             </div>
           </div>
 
-          {/* Right: login form */}
           <div className="lg:col-span-3 p-8 lg:p-12 flex flex-col justify-center">
             <div className="flex flex-col items-center text-center mb-8">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-5 relative">
@@ -215,7 +222,6 @@ export default function Login({ lang }: LoginProps) {
         </motion.div>
       </div>
 
-      {/* === BOTTOM CREDIT === */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

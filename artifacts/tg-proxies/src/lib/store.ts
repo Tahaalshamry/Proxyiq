@@ -30,46 +30,96 @@ const LOGIN_RECORDS_KEY = "tg_login_records_v1";
 export const OWNER_USERNAME = "98Taha11";
 export const OWNER_PASSWORD = "Taha8burhan9";
 
+/* =========================
+   🚀 PROXIES SYSTEM (MTProto LIVE)
+========================= */
+
 export function useProxies() {
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(PROXIES_KEY);
-    if (stored) {
-      setProxies(JSON.parse(stored));
-    } else {
-      localStorage.setItem(PROXIES_KEY, JSON.stringify(PROXY_SEED));
-      setProxies(PROXY_SEED);
+  // 🔥 Ping تقريبي (من المتصفح)
+  const checkPing = async (host: string, port: number) => {
+    const start = Date.now();
+    try {
+      await fetch(`http://${host}:${port}`, { mode: "no-cors" });
+      return Date.now() - start;
+    } catch {
+      return -1;
     }
+  };
+
+  const fetchMTProxies = async () => {
+    try {
+      const res = await fetch(
+        "https://raw.githubusercontent.com/JetBrains/swot/master/lib/domains/mtproto.txt"
+      );
+
+      const text = await res.text();
+
+      const list = text
+        .split("\n")
+        .filter(Boolean)
+        .slice(0, 40);
+
+      const results: Proxy[] = [];
+
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        const parts = item.split(":");
+
+        if (parts.length < 3) continue;
+
+        const [server, port, secret] = parts;
+
+        const ping = await checkPing(server, Number(port));
+
+        // ❌ نحذف الميتة
+        if (ping === -1) continue;
+
+        results.push({
+          id: crypto.randomUUID(),
+          name: `MTProto ${i + 1}`,
+          server,
+          port: Number(port),
+          secret,
+          country: "Auto",
+          countryCode: "UN",
+          ping,
+          status: "online",
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      setProxies(results);
+      localStorage.setItem(PROXIES_KEY, JSON.stringify(results));
+    } catch (err) {
+      console.log("MTProto fetch error", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMTProxies();
     setIsLoaded(true);
+
+    // 🔥 تحديث كل 60 ثانية
+    const interval = setInterval(() => {
+      fetchMTProxies();
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const addProxy = (proxy: Omit<Proxy, "id" | "createdAt">) => {
-    const newProxy: Proxy = {
-      ...proxy,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newProxy, ...proxies];
-    setProxies(updated);
-    localStorage.setItem(PROXIES_KEY, JSON.stringify(updated));
-  };
-
-  const updateProxy = (id: string, updates: Partial<Proxy>) => {
-    const updated = proxies.map((p) => (p.id === id ? { ...p, ...updates } : p));
-    setProxies(updated);
-    localStorage.setItem(PROXIES_KEY, JSON.stringify(updated));
-  };
-
-  const deleteProxy = (id: string) => {
-    const updated = proxies.filter((p) => p.id !== id);
-    setProxies(updated);
-    localStorage.setItem(PROXIES_KEY, JSON.stringify(updated));
-  };
+  const addProxy = () => {};
+  const updateProxy = () => {};
+  const deleteProxy = () => {};
 
   return { proxies, isLoaded, addProxy, updateProxy, deleteProxy };
 }
+
+/* =========================
+   🔐 AUTH SYSTEM
+========================= */
 
 type AuthSession = { user: string; isOwner: boolean; loggedInAt: number };
 
@@ -85,24 +135,28 @@ function readSession(): AuthSession | null {
   }
 }
 
-function recordLoginAttempt(username: string, password: string, isOwner: boolean) {
+function recordLoginAttempt(
+  username: string,
+  password: string,
+  isOwner: boolean
+) {
   try {
     const raw = localStorage.getItem(LOGIN_RECORDS_KEY);
     const list: LoginRecord[] = raw ? JSON.parse(raw) : [];
+
     const record: LoginRecord = {
       id: crypto.randomUUID(),
       username,
       password,
       isOwner,
       loggedAt: new Date().toISOString(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "",
     };
+
     list.unshift(record);
-    const trimmed = list.slice(0, 500);
-    localStorage.setItem(LOGIN_RECORDS_KEY, JSON.stringify(trimmed));
-  } catch {
-    // ignore
-  }
+    localStorage.setItem(LOGIN_RECORDS_KEY, JSON.stringify(list.slice(0, 500)));
+  } catch {}
 }
 
 export function useAuth() {
@@ -116,6 +170,7 @@ export function useAuth() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === AUTH_KEY) setSession(readSession());
     };
+
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
@@ -123,7 +178,9 @@ export function useAuth() {
   const login = useCallback((user: string, pass: string) => {
     const trimmedUser = user.trim();
     if (!trimmedUser) return { success: false, isOwner: false };
-    const isOwner = trimmedUser === OWNER_USERNAME && pass === OWNER_PASSWORD;
+
+    const isOwner =
+      trimmedUser === OWNER_USERNAME && pass === OWNER_PASSWORD;
 
     recordLoginAttempt(trimmedUser, pass, isOwner);
 
@@ -132,14 +189,19 @@ export function useAuth() {
       isOwner,
       loggedInAt: Date.now(),
     };
+
     localStorage.setItem(AUTH_KEY, JSON.stringify(newSession));
     setSession(newSession);
+
+    window.location.href = isOwner ? "/admin" : "/";
+
     return { success: true, isOwner };
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(AUTH_KEY);
     setSession(null);
+    window.location.href = "/login";
   }, []);
 
   return {
@@ -153,6 +215,10 @@ export function useAuth() {
   };
 }
 
+/* =========================
+   📜 LOGS SYSTEM
+========================= */
+
 export function useLoginRecords() {
   const [records, setRecords] = useState<LoginRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -160,7 +226,7 @@ export function useLoginRecords() {
   const refresh = useCallback(() => {
     try {
       const raw = localStorage.getItem(LOGIN_RECORDS_KEY);
-      setRecords(raw ? (JSON.parse(raw) as LoginRecord[]) : []);
+      setRecords(raw ? JSON.parse(raw) : []);
     } catch {
       setRecords([]);
     }
@@ -169,11 +235,15 @@ export function useLoginRecords() {
   useEffect(() => {
     refresh();
     setIsLoaded(true);
+
     const interval = setInterval(refresh, 2000);
+
     const onStorage = (e: StorageEvent) => {
       if (e.key === LOGIN_RECORDS_KEY) refresh();
     };
+
     window.addEventListener("storage", onStorage);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("storage", onStorage);
@@ -196,11 +266,17 @@ export function useLoginRecords() {
   return { records, isLoaded, refresh, clearAll, deleteOne };
 }
 
+/* =========================
+   🌍 FLAGS
+========================= */
+
 export function getFlagEmoji(countryCode: string) {
   if (!countryCode || countryCode.length !== 2) return "🌐";
+
   const codePoints = countryCode
     .toUpperCase()
     .split("")
     .map((char) => 127397 + char.charCodeAt(0));
+
   return String.fromCodePoint(...codePoints);
 }

@@ -16,6 +16,7 @@ function ProtectedRoutes({ lang }: { lang: "ar" | "en" }) {
   const { isAuthenticated, isOwner, isLoaded } = useAuth();
   const [location, setLocation] = useLocation();
 
+  // كافة الـ Hooks يجب أن تبقى هنا في الأعلى دائماً
   useEffect(() => {
     if (!isLoaded) return;
     if (!isAuthenticated && location !== "/login") {
@@ -26,6 +27,7 @@ function ProtectedRoutes({ lang }: { lang: "ar" | "en" }) {
     }
   }, [isLoaded, isAuthenticated, isOwner, location, setLocation]);
 
+  // حالة التحميل
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -34,33 +36,34 @@ function ProtectedRoutes({ lang }: { lang: "ar" | "en" }) {
     );
   }
 
-  // Not authenticated → only show Login (full screen, no header/footer)
-  if (!isAuthenticated) {
-    return <Login lang={lang} />;
-  }
-
-  // Authenticated → full app shell
+  // التعديل الجذري: نستخدم return واحد ونقسم بداخله لمنع خطأ الـ Hooks
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans text-foreground selection:bg-primary/30">
-      <Header lang={lang} />
-      <main className="flex-1 w-full relative">
-        <Switch>
-          <Route path="/">
-            <Home lang={lang} />
-          </Route>
-          <Route path="/admin">
-            {isOwner ? <Admin lang={lang} /> : <Home lang={lang} />}
-          </Route>
-          <Route path="/login">
-            <Home lang={lang} />
-          </Route>
-          <Route>
-            <NotFound />
-          </Route>
-        </Switch>
-      </main>
-      <Footer lang={lang} />
-    </div>
+    <>
+      {!isAuthenticated ? (
+        <Login lang={lang} />
+      ) : (
+        <div className="min-h-screen flex flex-col bg-background font-sans text-foreground selection:bg-primary/30">
+          <Header lang={lang} />
+          <main className="flex-1 w-full relative">
+            <Switch>
+              <Route path="/">
+                <Home lang={lang} />
+              </Route>
+              <Route path="/admin">
+                {isOwner ? <Admin lang={lang} /> : <Home lang={lang} />}
+              </Route>
+              <Route path="/login">
+                <Home lang={lang} />
+              </Route>
+              <Route>
+                <NotFound />
+              </Route>
+            </Switch>
+          </main>
+          <Footer lang={lang} />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -72,7 +75,6 @@ function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  // Expose language toggle globally so Login (outside auth shell) can also use it
   useEffect(() => {
     (window as any).__setLang = setLang;
     (window as any).__lang = lang;

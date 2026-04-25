@@ -17,6 +17,17 @@ export function Header({ lang }: HeaderProps) {
     if (typeof setter === "function") setter(l);
   };
 
+  const handleLogout = () => {
+    // 🔥 حذف أي توكن إذا موجود
+    localStorage.removeItem("token");
+
+    // 🔥 تحديث الحالة مباشرة
+    logout();
+
+    // 🔥 تحويل فوري بدون انتظار React
+    window.location.href = "/login";
+  };
+
   return (
     <header className="sticky top-0 w-full z-50 border-b border-white/10 bg-background/60 backdrop-blur-xl">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -65,7 +76,12 @@ export function Header({ lang }: HeaderProps) {
           )}
 
           {isAuthenticated && (
-            <Button variant="ghost" size="sm" onClick={logout} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
               <LogOut className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{isAr ? "خروج" : "Logout"}</span>
             </Button>

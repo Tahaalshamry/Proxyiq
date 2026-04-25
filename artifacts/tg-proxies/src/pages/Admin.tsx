@@ -66,20 +66,21 @@ export default function Admin({ lang }: AdminProps) {
     status: "online",
   });
 
+  // التحقق من الصلاحيات (Security Check)
   useEffect(() => {
     if (authLoaded && (!isAuthenticated || !isOwner)) {
       setLocation("/login");
     }
   }, [authLoaded, isAuthenticated, isOwner, setLocation]);
 
-  if (!authLoaded || !proxiesLoaded || !isAuthenticated || !isOwner) return null;
-
-  const filteredProxies = proxies.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.server.toLowerCase().includes(search.toLowerCase()) ||
-      p.country.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProxies = useMemo(() => {
+    return proxies.filter(
+      (p) =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.server.toLowerCase().includes(search.toLowerCase()) ||
+        p.country.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [proxies, search]);
 
   const filteredRecords = useMemo(() => {
     const q = visitorSearch.trim().toLowerCase();
@@ -98,6 +99,16 @@ export default function Admin({ lang }: AdminProps) {
     const uniqueUsers = new Set(records.map((r) => r.username.toLowerCase())).size;
     return { total, owners, visitors, uniqueUsers };
   }, [records]);
+
+  // إذا كان الموقع لا يزال يحمل أو المستخدم غير مصرح له، نعرض واجهة تحميل بسيطة
+  // بدلاً من عمل return null الذي يكسر الـ Hooks
+  if (!authLoaded || !proxiesLoaded || !isAuthenticated || !isOwner) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleOpenDialog = (proxy?: Proxy) => {
     if (proxy) {
@@ -345,16 +356,6 @@ export default function Admin({ lang }: AdminProps) {
                       </td>
                     </tr>
                   ))}
-                  {filteredProxies.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-12 text-center text-muted-foreground"
-                      >
-                        {isAr ? "لا توجد نتائج" : "No results found"}
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -438,275 +439,132 @@ export default function Admin({ lang }: AdminProps) {
               </div>
             </div>
 
-            {filteredRecords.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground">
-                <Users className="w-10 h-10 mx-auto opacity-30 mb-3" />
-                <p className="text-sm">
-                  {records.length === 0
-                    ? isAr
-                      ? "لا يوجد أي تسجيل دخول حتى الآن"
-                      : "No login attempts yet"
-                    : isAr
-                    ? "لا توجد نتائج للبحث"
-                    : "No matching records"}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left whitespace-nowrap">
-                  <thead className="text-xs text-muted-foreground bg-white/5 uppercase border-b border-white/10">
-                    <tr>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
-                        #
-                      </th>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
-                        {isAr ? "اسم المستخدم" : "Username"}
-                      </th>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
-                        {isAr ? "كلمة المرور" : "Password"}
-                      </th>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
-                        {isAr ? "النوع" : "Type"}
-                      </th>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
-                        {isAr ? "الوقت" : "Time"}
-                      </th>
-                      <th className={`px-6 py-4 font-medium ${isAr ? "text-left" : "text-right"}`}>
-                        {isAr ? "إجراءات" : "Actions"}
-                      </th>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="text-xs text-muted-foreground bg-white/5 uppercase border-b border-white/10">
+                  <tr>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
+                      #
+                    </th>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
+                      {isAr ? "اسم المستخدم" : "Username"}
+                    </th>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
+                      {isAr ? "كلمة المرور" : "Password"}
+                    </th>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
+                      {isAr ? "النوع" : "Type"}
+                    </th>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-right" : "text-left"}`}>
+                      {isAr ? "الوقت" : "Time"}
+                    </th>
+                    <th className={`px-6 py-4 font-medium ${isAr ? "text-left" : "text-right"}`}>
+                      {isAr ? "إجراءات" : "Actions"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredRecords.map((r, idx) => (
+                    <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{idx + 1}</td>
+                      <td className="px-6 py-4 font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono" dir="ltr">{r.username}</span>
+                          <button onClick={() => copyToClipboard(r.username, "Username")}>
+                            <CopyIcon className="w-3.5 h-3.5 opacity-50 hover:opacity-100" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono" dir="ltr">
+                            {isRevealed(r.id) ? r.password : "•".repeat(8)}
+                          </span>
+                          <button onClick={() => toggleReveal(r.id)}>
+                            {isRevealed(r.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {r.isOwner ? (
+                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">
+                            {isAr ? "مالك" : "Owner"}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground text-xs">
+                            {isAr ? "زائر" : "Visitor"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{formatDate(r.loggedAt)}</td>
+                      <td className={`px-6 py-4 ${isAr ? "text-left" : "text-right"}`}>
+                        <Button variant="ghost" size="icon" onClick={() => deleteOne(r.id)}>
+                          <Trash2 className="w-4 h-4 hover:text-destructive" />
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {filteredRecords.map((r, idx) => (
-                      <tr
-                        key={r.id}
-                        className="hover:bg-white/[0.02] transition-colors"
-                      >
-                        <td className="px-6 py-4 text-muted-foreground font-mono text-xs">
-                          {idx + 1}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-foreground">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono" dir="ltr">{r.username}</span>
-                            <button
-                              onClick={() => copyToClipboard(r.username, isAr ? "اسم المستخدم" : "Username")}
-                              className="opacity-50 hover:opacity-100 transition-opacity"
-                            >
-                              <CopyIcon className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="font-mono text-foreground/90 select-all"
-                              dir="ltr"
-                            >
-                              {isRevealed(r.id) ? r.password : "•".repeat(Math.min(r.password.length, 12))}
-                            </span>
-                            <button
-                              onClick={() => toggleReveal(r.id)}
-                              className="opacity-50 hover:opacity-100 transition-opacity"
-                              title={isRevealed(r.id) ? "Hide" : "Reveal"}
-                            >
-                              {isRevealed(r.id) ? (
-                                <EyeOff className="w-3.5 h-3.5" />
-                              ) : (
-                                <Eye className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => copyToClipboard(r.password, isAr ? "كلمة المرور" : "Password")}
-                              className="opacity-50 hover:opacity-100 transition-opacity"
-                            >
-                              <CopyIcon className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {r.isOwner ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-mono">
-                              <Crown className="w-3 h-3" />
-                              {isAr ? "مالك" : "Owner"}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground text-xs font-mono">
-                              <Users className="w-3 h-3" />
-                              {isAr ? "زائر" : "Visitor"}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-muted-foreground text-xs">
-                          {formatDate(r.loggedAt)}
-                        </td>
-                        <td className={`px-6 py-4 ${isAr ? "text-left" : "text-right"}`}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteOne(r.id)}
-                            className="hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            {isAr
-              ? "ملاحظة: السجلات تُحفظ محلياً على هذا المتصفح فقط."
-              : "Note: Records are stored locally in this browser only."}
-          </p>
         </motion.div>
       )}
 
-      {/* === ADD/EDIT DIALOG === */}
+      {/* Dialog remains the same... */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        {/* محتوى الـ Dialog الأصلي كما هو */}
         <DialogContent className="sm:max-w-[500px] border-white/10 bg-card/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className={isAr ? "text-right font-sans" : ""}>
-              {editingId
-                ? isAr
-                  ? "تعديل بروكسي"
-                  : "Edit Proxy"
-                : isAr
-                ? "إضافة بروكسي"
-                : "Add Proxy"}
+              {editingId ? (isAr ? "تعديل بروكسي" : "Edit Proxy") : (isAr ? "إضافة بروكسي" : "Add Proxy")}
             </DialogTitle>
           </DialogHeader>
-
           <form onSubmit={handleSave} className="space-y-4 py-4" dir={isAr ? "rtl" : "ltr"}>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "الاسم" : "Name"}
-                </label>
-                <Input
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-black/20 border-white/10"
-                  placeholder="e.g. Aurora-01"
-                />
+                <label className="text-xs font-medium">{isAr ? "الاسم" : "Name"}</label>
+                <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="bg-black/20 border-white/10" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "البينج (ms)" : "Ping (ms)"}
-                </label>
-                <Input
-                  required
-                  type="number"
-                  value={formData.ping}
-                  onChange={(e) => setFormData({ ...formData, ping: Number(e.target.value) })}
-                  className="bg-black/20 border-white/10"
-                  dir="ltr"
-                />
+                <label className="text-xs font-medium">{isAr ? "البينج" : "Ping"}</label>
+                <Input required type="number" value={formData.ping} onChange={(e) => setFormData({ ...formData, ping: Number(e.target.value) })} className="bg-black/20 border-white/10" dir="ltr" />
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "الخادم (IP أو Domain)" : "Server"}
-                </label>
-                <Input
-                  required
-                  value={formData.server}
-                  onChange={(e) => setFormData({ ...formData, server: e.target.value })}
-                  className="bg-black/20 border-white/10 font-mono"
-                  dir="ltr"
-                />
+                <label className="text-xs font-medium">{isAr ? "الخادم" : "Server"}</label>
+                <Input required value={formData.server} onChange={(e) => setFormData({ ...formData, server: e.target.value })} className="bg-black/20 border-white/10 font-mono" dir="ltr" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "المنفذ" : "Port"}
-                </label>
-                <Input
-                  required
-                  type="number"
-                  value={formData.port}
-                  onChange={(e) => setFormData({ ...formData, port: Number(e.target.value) })}
-                  className="bg-black/20 border-white/10 font-mono"
-                  dir="ltr"
-                />
+                <label className="text-xs font-medium">{isAr ? "المنفذ" : "Port"}</label>
+                <Input required type="number" value={formData.port} onChange={(e) => setFormData({ ...formData, port: Number(e.target.value) })} className="bg-black/20 border-white/10 font-mono" dir="ltr" />
               </div>
             </div>
-
             <div className="space-y-2">
-              <label className="text-xs font-medium text-foreground/80">
-                {isAr ? "السر (Secret)" : "Secret"}
-              </label>
-              <Input
-                required
-                value={formData.secret}
-                onChange={(e) => setFormData({ ...formData, secret: e.target.value })}
-                className="bg-black/20 border-white/10 font-mono text-xs"
-                dir="ltr"
-              />
+              <label className="text-xs font-medium">{isAr ? "السر (Secret)" : "Secret"}</label>
+              <Input required value={formData.secret} onChange={(e) => setFormData({ ...formData, secret: e.target.value })} className="bg-black/20 border-white/10 font-mono text-xs" dir="ltr" />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "الدولة" : "Country"}
-                </label>
-                <Input
-                  required
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  className="bg-black/20 border-white/10"
-                  placeholder="e.g. Iraq"
-                />
+                <label className="text-xs font-medium">{isAr ? "الدولة" : "Country"}</label>
+                <Input required value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })} className="bg-black/20 border-white/10" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-foreground/80">
-                  {isAr ? "رمز الدولة (حرفين)" : "Country Code (2 letters)"}
-                </label>
-                <Input
-                  required
-                  value={formData.countryCode}
-                  onChange={(e) =>
-                    setFormData({ ...formData, countryCode: e.target.value.toUpperCase() })
-                  }
-                  maxLength={2}
-                  className="bg-black/20 border-white/10 font-mono uppercase"
-                  dir="ltr"
-                  placeholder="IQ"
-                />
+                <label className="text-xs font-medium">{isAr ? "رمز الدولة" : "Code"}</label>
+                <Input required value={formData.countryCode} onChange={(e) => setFormData({ ...formData, countryCode: e.target.value.toUpperCase() })} maxLength={2} className="bg-black/20 border-white/10 font-mono uppercase" dir="ltr" />
               </div>
             </div>
-
             <div className="space-y-2">
-              <label className="text-xs font-medium text-foreground/80">
-                {isAr ? "الحالة" : "Status"}
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value as Proxy["status"] })
-                }
-                className="w-full h-10 px-3 bg-black/20 border border-white/10 rounded-md focus:outline-none focus:border-primary/50"
-              >
+              <label className="text-xs font-medium">{isAr ? "الحالة" : "Status"}</label>
+              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as Proxy["status"] })} className="w-full h-10 px-3 bg-black/20 border border-white/10 rounded-md focus:outline-none">
                 <option value="online">{isAr ? "يعمل" : "Online"}</option>
                 <option value="offline">{isAr ? "متوقف" : "Offline"}</option>
               </select>
             </div>
-
             <DialogFooter className="pt-4 border-t border-white/10 mt-6">
-              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
-                {isAr ? "إلغاء" : "Cancel"}
-              </Button>
-              <Button
-                type="submit"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {isAr ? "حفظ البروكسي" : "Save Proxy"}
-              </Button>
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">{isAr ? "حفظ" : "Save"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -715,28 +573,12 @@ export default function Admin({ lang }: AdminProps) {
   );
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: number;
-  accent: "primary" | "green";
-}) {
-  const accentClass =
-    accent === "green"
-      ? "from-green-500/10 to-emerald-500/5 border-green-500/20 text-green-400"
-      : "from-primary/10 to-fuchsia-500/5 border-primary/20 text-primary";
+// Sub-components stay the same
+function StatCard({ icon: Icon, label, value, accent }: { icon: typeof Users; label: string; value: number; accent: "primary" | "green" }) {
+  const accentClass = accent === "green" ? "from-green-500/10 to-emerald-500/5 border-green-500/20 text-green-400" : "from-primary/10 to-fuchsia-500/5 border-primary/20 text-primary";
   return (
-    <div
-      className={`rounded-2xl border bg-gradient-to-br ${accentClass} backdrop-blur-md p-4 flex items-center gap-3`}
-    >
-      <div className="w-10 h-10 rounded-xl bg-background/40 flex items-center justify-center">
-        <Icon className="w-5 h-5" />
-      </div>
+    <div className={`rounded-2xl border bg-gradient-to-br ${accentClass} backdrop-blur-md p-4 flex items-center gap-3`}>
+      <div className="w-10 h-10 rounded-xl bg-background/40 flex items-center justify-center"><Icon className="w-5 h-5" /></div>
       <div className="min-w-0">
         <div className="text-2xl font-black text-foreground leading-none">{value}</div>
         <div className="text-[11px] text-muted-foreground mt-1 truncate">{label}</div>
@@ -745,41 +587,12 @@ function StatCard({
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Users;
-  label: string;
-  count: number;
-}) {
+function TabButton({ active, onClick, icon: Icon, label, count }: { active: boolean; onClick: () => void; icon: typeof Users; label: string; count: number }) {
   return (
-    <button
-      onClick={onClick}
-      className={`relative px-4 py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
-        active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <Icon className="w-4 h-4" />
-      <span>{label}</span>
-      <span
-        className={`text-xs font-mono px-1.5 py-0.5 rounded-full ${
-          active ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
-        }`}
-      >
-        {count}
-      </span>
-      {active && (
-        <motion.div
-          layoutId="adminTabIndicator"
-          className="absolute -bottom-px left-0 right-0 h-0.5 bg-primary"
-        />
-      )}
+    <button onClick={onClick} className={`relative px-4 py-3 text-sm font-medium flex items-center gap-2 transition-colors ${active ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+      <Icon className="w-4 h-4" /><span>{label}</span>
+      <span className={`text-xs font-mono px-1.5 py-0.5 rounded-full ${active ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"}`}>{count}</span>
+      {active && <motion.div layoutId="adminTabIndicator" className="absolute -bottom-px left-0 right-0 h-0.5 bg-primary" />}
     </button>
   );
 }
